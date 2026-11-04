@@ -52,7 +52,7 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:v
 <nav id="tabs"><button data-t="bg" class="on">Фон</button><button data-t="logo">Лого</button><button data-t="text">Текст</button><button data-t="export">Экспорт</button></nav>
 <main id="panel"></main>
 </div>
-<div id="dl" hidden><p style="text-align:center;margin:0">Нажмите на обложку и удерживайте, чтобы сохранить в галерею</p><img id="dlimg" alt=""><div class="btns" style="width:100%;max-width:420px"><button class="btn" id="dlweb">Открыть в браузере</button><button class="btn" id="dlclose">Закрыть</button></div></div>
+<div id="dl" hidden><p id="dlmsg" style="text-align:center;margin:0">Обложка готова. Нажмите «Сохранить файл». Если ничего не произошло — «Поделиться» или «Открыть в браузере».</p><img id="dlimg" alt=""><div class="btns" style="width:100%;max-width:420px"><button class="btn main" id="dlsave">Сохранить файл</button><button class="btn" id="dlshare">Поделиться</button><button class="btn" id="dlweb">Открыть в браузере</button><button class="btn" id="dlclose">Закрыть</button></div><p class="hint" id="dlnote" style="text-align:center"></p></div>
 
 <script>
 const D0=1254, $=s=>document.querySelector(s);
@@ -201,7 +201,7 @@ cv.addEventListener('pointermove',e=>{const p=P.get(e.pointerId);if(!p)return;co
 cv.addEventListener('wheel',e=>{e.preventDefault();if(!S.bg.img)return;S.bg.scale=Math.min(5,Math.max(.1,S.bg.scale*(e.deltaY<0?1.05:.95)));sync();draw()},{passive:false});
 
 /* ---------- экспорт ---------- */
-let busy=false;
+let busy=false,last=null;
 async function makeBlob(){
  await document.fonts.load('40px Gotthard');await document.fonts.ready;
  const c=document.createElement('canvas');c.width=c.height=S.size;
@@ -214,18 +214,17 @@ $('#go').onclick=async()=>{
  try{
   const blob=await makeBlob(),ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[blob.type]||'png';
   const num=(S.layers[0].text.match(/\d+/)||['cover'])[0],name=`COOLT_${num}.${ext}`;
-  const file=new File([blob],name,{type:blob.type});
-  const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(mobile){
-   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]});st.textContent='Готово: '+name;return}catch(e){if(e.name==='AbortError')return}}
-   $('#dlimg').src=URL.createObjectURL(blob);$('#dl').hidden=false;
-  }else{
-   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
-   setTimeout(()=>URL.revokeObjectURL(a.href),20000);st.textContent=`Сохранено: ${name} (${S.size}×${S.size})`}
+  last={blob,name,file:new File([blob],name,{type:blob.type}),url:URL.createObjectURL(blob)};
+  $('#dlimg').src=last.url;$('#dlnote').textContent=`${name}, ${S.size}×${S.size}`;
+  $('#dlshare').style.display=(navigator.canShare&&navigator.canShare({files:[last.file]}))?'':'none';
+  $('#dl').hidden=false;st.textContent='';
  }catch(err){st.textContent='Не удалось создать файл. Выберите размер поменьше (2000 или 1500) и повторите.'}
  finally{busy=false;btn.textContent='Скачать на устройство'}};
 $('#dlclose').onclick=()=>{$('#dl').hidden=true};
-$('#dlweb').onclick=()=>{const u=location.href;tg&&tg.openLink?tg.openLink(u,{try_instant_view:false}):window.open(u,'_blank')};
+$('#dlsave').onclick=()=>{if(!last)return;const a=document.createElement('a');a.href=last.url;a.download=last.name;document.body.appendChild(a);a.click();a.remove();
+ $('#dlnote').textContent='Если файл не появился — Telegram блокирует скачивание. Нажмите «Открыть в браузере» или «Поделиться».'};
+$('#dlshare').onclick=async()=>{try{await navigator.share({files:[last.file]})}catch(e){}};
+$('#dlweb').onclick=()=>{const u=location.href.split('#')[0];tg&&tg.openLink?tg.openLink(u,{try_browser:'chrome'}):window.open(u,'_blank')};
 
 sync();document.fonts.load('30px Gotthard').then(draw);draw();
 </script>
