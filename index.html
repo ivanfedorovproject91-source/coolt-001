@@ -52,9 +52,11 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:v
 <nav id="tabs"><button data-t="bg" class="on">Фон</button><button data-t="logo">Лого</button><button data-t="text">Текст</button><button data-t="export">Экспорт</button></nav>
 <main id="panel"></main>
 </div>
-<div id="dl" hidden><p id="dlmsg" style="text-align:center;margin:0">Обложка готова. На телефоне: нажмите на картинку и удерживайте палец, затем «Сохранить в Фото / Загрузки». Или используйте кнопки ниже.</p><img id="dlimg" alt=""><div class="btns" style="width:100%;max-width:420px"><button class="btn main" id="dlsave">Сохранить файл</button><button class="btn" id="dlshare">Поделиться</button><button class="btn" id="dlopen">Открыть картинку отдельно</button><button class="btn" id="dlweb">Открыть в браузере</button><button class="btn" id="dlclose">Закрыть</button></div><p class="hint" id="dlnote" style="text-align:center"></p></div>
+<div id="dl" hidden><p id="dlmsg" style="text-align:center;margin:0">Обложка готова. На телефоне: нажмите на картинку и удерживайте палец, затем «Сохранить в Фото / Загрузки». Или используйте кнопки ниже.</p><img id="dlimg" alt=""><div class="btns" style="width:100%;max-width:420px"><button class="btn main" id="dlTg" style="display:none">Отправить мне в Telegram</button><button class="btn main" id="dlsave">Сохранить файл</button><button class="btn" id="dlshare">Поделиться</button><button class="btn" id="dlopen">Открыть картинку отдельно</button><button class="btn" id="dlweb">Открыть в браузере</button><button class="btn" id="dlclose">Закрыть</button></div><p class="hint" id="dlnote" style="text-align:center"></p></div>
 
 <script>
+// Вставьте сюда адрес вашего Cloudflare Worker (см. инструкцию bot/ИНСТРУКЦИЯ.md)
+const WORKER_URL='https://coolt-bot.ivanfedorovproject91.workers.dev';
 const D0=1254, $=s=>document.querySelector(s);
 const tg=window.Telegram&&Telegram.WebApp;
 if(tg){try{tg.ready();tg.expand();tg.disableVerticalSwipes&&tg.disableVerticalSwipes();tg.setHeaderColor('#101114');tg.setBackgroundColor('#101114')}catch(e){}}
@@ -102,6 +104,7 @@ $('#panel').innerHTML=`
  <div class="row"><label>Формат</label><select id="fmt"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option><option value="image/webp">WEBP</option></select></div>
  <div class="row"><label>Размер</label><select id="size"><option value="3000">3000 × 3000</option><option value="2000">2000 × 2000</option><option value="1500">1500 × 1500</option><option value="1000">1000 × 1000</option></select></div>
  <div class="row" id="qRow"><label>Качество<output data-o="q"></output></label><input type="range" data-p="q" min=".5" max="1" step=".01"></div>
+ <button class="btn main" id="goTg" style="margin-bottom:10px;display:none">Отправить мне в Telegram</button>
  <button class="btn main" id="go">Скачать на устройство</button>
  <p class="hint" id="status"></p>
  <p class="hint">JPG не поддерживает прозрачность, пустые места зальются цветом подложки.</p>
@@ -226,6 +229,21 @@ $('#dlsave').onclick=()=>{if(!last)return;const a=document.createElement('a');a.
 $('#dlopen').onclick=()=>{window.open(last.url,'_blank')};
 $('#dlshare').onclick=async()=>{try{await navigator.share({files:[last.file]})}catch(e){}};
 $('#dlweb').onclick=()=>{const u=location.href.split('#')[0];tg&&tg.openLink?tg.openLink(u,{try_browser:'chrome'}):window.open(u,'_blank')};
+
+
+/* ---------- отправка файла в чат Telegram ---------- */
+async function sendTg(btn){
+ if(busy)return;busy=true;const old=btn.textContent,st=$('#status');btn.textContent='Отправляю…';
+ try{
+  if(!last||last.stale){const blob=await makeBlob();last={blob,name:'COOLT_'+((S.layers[0].text.match(/\d+/)||['cover'])[0])+'.'+({'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[blob.type]||'png'),url:URL.createObjectURL(blob)}}
+  const f=new FormData();f.append('initData',tg.initData);f.append('file',last.blob,last.name);
+  const r=await fetch(WORKER_URL,{method:'POST',body:f}),j=await r.json();
+  const msg=j.ok?'Готово! Файл пришёл вам в чат с ботом.':'Ошибка: '+(j.error||r.status)+(String(j.error).includes('chat not found')||String(j.error).includes('blocked')?'. Откройте чат с ботом и нажмите /start.':'');
+  st.textContent=msg;$('#dlnote').textContent=msg;alert(msg);
+ }catch(e){const m='Не удалось отправить. Проверьте адрес WORKER_URL и интернет.';st.textContent=m;alert(m)}
+ finally{busy=false;btn.textContent=old}}
+if(tg&&tg.initData&&WORKER_URL){$('#goTg').style.display=$('#dlTg').style.display='';}
+$('#goTg').onclick=e=>{last=null;sendTg(e.currentTarget)};$('#dlTg').onclick=e=>sendTg(e.currentTarget);
 
 sync();document.fonts.load('30px Gotthard').then(draw);draw();
 </script>
