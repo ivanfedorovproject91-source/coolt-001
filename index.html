@@ -47,12 +47,12 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:v
 </head>
 <body>
 <div id="app">
-<header><img src="assets/coolt.png" alt="COOLT" style="filter:invert(0)"><b>COOLT EDITOR</b></header>
+<header><img src="assets/coolt.png" alt="COOLT" style="filter:invert(0)"></header>
 <div class="stage" id="stage"><canvas id="cv"></canvas></div>
 <nav id="tabs"><button data-t="bg" class="on">Фон</button><button data-t="logo">Лого</button><button data-t="text">Текст</button><button data-t="export">Экспорт</button></nav>
 <main id="panel"></main>
 </div>
-<div id="dl" hidden><p id="dlmsg" style="text-align:center;margin:0">Обложка готова. На телефоне: нажмите на картинку и удерживайте палец, затем «Сохранить в Фото / Загрузки». Или используйте кнопки ниже.</p><img id="dlimg" alt=""><div class="btns" style="width:100%;max-width:420px"><button class="btn main" id="dlTg" style="display:none">Отправить мне в Telegram</button><button class="btn main" id="dlsave">Сохранить файл</button><button class="btn" id="dlshare">Поделиться</button><button class="btn" id="dlopen">Открыть картинку отдельно</button><button class="btn" id="dlweb">Открыть в браузере</button><button class="btn" id="dlclose">Закрыть</button></div><p class="hint" id="dlnote" style="text-align:center"></p></div>
+
 
 <script>
 // Вставьте сюда адрес вашего Cloudflare Worker (см. инструкцию bot/ИНСТРУКЦИЯ.md)
@@ -64,7 +64,7 @@ if(tg){try{tg.ready();tg.expand();tg.disableVerticalSwipes&&tg.disableVerticalSw
 /* ---------- состояние ---------- */
 const T=(o={})=>Object.assign({id:'t'+Math.random().toString(36).slice(2,7),text:'Текст',x:627,y:300,size:80,color:'#ffffff',opacity:1,track:0,lh:1.1,bold:0,rot:0,align:'center',upper:false},o);
 const S={
- bg:{img:null,w:0,h:0,x:0,y:0,scale:1,rot:0,flip:false,dim:0,fill:'#15171a'},
+ bg:{img:null,w:0,h:0,x:0,y:0,scale:1,rot:0,flip:false,dim:0,hue:0,fill:'#15171a'},
  logo:{on:true,color:'#ffffff',opacity:.9,thick:0,blend:'source-over'},
  layers:[T({id:'num',text:'CLT 962',x:1045.7,y:907.1,size:30,align:'left'})],
  sel:0, fmt:'image/png', size:3000, q:.92, tab:'bg'
@@ -83,7 +83,7 @@ $('#panel').innerHTML=`
  <label class="btn main" style="display:block">Загрузить изображение<input type="file" id="file" accept="image/*" hidden></label>
  <p class="hint">Двигайте фото пальцем или мышью. Масштаб — щипком или колесом мыши.</p>
  <div class="btns"><button class="btn" id="bFill">Заполнить</button><button class="btn" id="bFit">Вписать</button><button class="btn" id="bRot">Повернуть 90°</button><button class="btn" id="bFlip">Отразить</button><button class="btn" id="bReset">Сброс</button></div>
- ${R('Масштаб','bg.scale',.1,5,.01)}${R('Поворот','bg.rot',-180,180,1)}${R('Затемнение','bg.dim',0,.9,.01)}${C('Цвет подложки','bg.fill')}
+ ${R('Масштаб','bg.scale',.1,5,.01)}${R('Поворот','bg.rot',-180,180,1)}${R('Тон','bg.hue',-180,180,1)}${R('Затемнение','bg.dim',0,.9,.01)}${C('Цвет подложки','bg.fill')}
 </section>
 <section class="sec" data-s="logo">
  ${CHK('Показывать лого','logo.on')}${C('Цвет лого','logo.color')}${R('Прозрачность','logo.opacity',0,1,.01)}${R('Толщина линий','logo.thick',0,14,.5)}
@@ -104,10 +104,9 @@ $('#panel').innerHTML=`
  <div class="row"><label>Формат</label><select id="fmt"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option><option value="image/webp">WEBP</option></select></div>
  <div class="row"><label>Размер</label><select id="size"><option value="3000">3000 × 3000</option><option value="2000">2000 × 2000</option><option value="1500">1500 × 1500</option><option value="1000">1000 × 1000</option></select></div>
  <div class="row" id="qRow"><label>Качество<output data-o="q"></output></label><input type="range" data-p="q" min=".5" max="1" step=".01"></div>
- <button class="btn main" id="goTg" style="margin-bottom:10px;display:none">Отправить мне в Telegram</button>
- <button class="btn main" id="go">Скачать на устройство</button>
+ <button class="btn main" id="goTg">Отправить мне в Telegram</button>
  <p class="hint" id="status"></p>
- <p class="hint">JPG не поддерживает прозрачность, пустые места зальются цветом подложки.</p>
+ 
 </section>
 <footer>COOLT EDITOR<br>Разработчик Фёдоров И.Е. Специально для лейбла COOLT</footer>`;
 // footer внутри последней секции не нужен — переносим в конец панели
@@ -152,7 +151,7 @@ function setFit(m){if(!S.bg.img)return;const[w,h]=eff();S.bg.scale=m?Math.min(D0
 $('#bFill').onclick=()=>setFit(0);$('#bFit').onclick=()=>setFit(1);
 $('#bRot').onclick=()=>{S.bg.rot=((S.bg.rot+90+180)%360)-180;setFit(0)};
 $('#bFlip').onclick=()=>{S.bg.flip=!S.bg.flip;draw()};
-$('#bReset').onclick=()=>{Object.assign(S.bg,{x:0,y:0,scale:1,rot:0,flip:false,dim:0});sync();draw()};
+$('#bReset').onclick=()=>{Object.assign(S.bg,{x:0,y:0,scale:1,rot:0,flip:false,dim:0,hue:0});sync();draw()};
 $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const u=URL.createObjectURL(f),im=new Image();
  im.onload=()=>{let src=im,w=im.naturalWidth,h=im.naturalHeight;const m=Math.max(w,h);
   if(m>4096){const k=4096/m,c=document.createElement('canvas');c.width=w=Math.round(w*k);c.height=h=Math.round(h*k);c.getContext('2d').drawImage(im,0,0,w,h);src=c}
@@ -177,11 +176,19 @@ function drawText(x,L,k){
   let px=L.align==='center'?-tot/2:L.align==='right'?-tot:0;const py=i*L.size*L.lh*k;
   ch.forEach((c,j)=>{if(L.bold>0)x.strokeText(c,px,py);x.fillText(c,px,py);px+=ws[j]+tr})});
  x.restore()}
+let oc=null;const offCanvas=D=>{if(!oc)oc=document.createElement('canvas');if(oc.width!==D)oc.width=oc.height=D;return oc};
+function hueShift(c,deg){const x=c.getContext('2d',{willReadFrequently:true}),D=c.width,im=x.getImageData(0,0,D,D),d=im.data,a=deg*Math.PI/180,co=Math.cos(a),si=Math.sin(a);
+ const m=[.213+co*.787-si*.213,.715-co*.715-si*.715,.072-co*.072+si*.928,.213-co*.213+si*.143,.715+co*.285+si*.14,.072-co*.072-si*.283,.213-co*.213-si*.787,.715-co*.715+si*.715,.072+co*.928+si*.072];
+ for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;const r=d[i],g=d[i+1],b=d[i+2];d[i]=m[0]*r+m[1]*g+m[2]*b;d[i+1]=m[3]*r+m[4]*g+m[5]*b;d[i+2]=m[6]*r+m[7]*g+m[8]*b}
+ x.putImageData(im,0,0)}
 function render(c,D,preview){
  const x=c.getContext('2d'),k=D/D0;x.imageSmoothingQuality='high';x.globalAlpha=1;x.globalCompositeOperation='source-over';
  x.fillStyle=S.bg.fill;x.fillRect(0,0,D,D);
  const b=S.bg;
- if(b.img){x.save();x.translate(D/2+b.x*k,D/2+b.y*k);x.rotate(b.rot*Math.PI/180);const s=base()*b.scale*k;x.scale(b.flip?-s:s,s);x.drawImage(b.img,-b.w/2,-b.h/2);x.restore()}
+ if(b.img){let t=x,off=null;
+  if(b.hue){off=offCanvas(D);t=off.getContext('2d',{willReadFrequently:true});t.clearRect(0,0,D,D);t.imageSmoothingQuality='high'}
+  t.save();t.translate(D/2+b.x*k,D/2+b.y*k);t.rotate(b.rot*Math.PI/180);const s=base()*b.scale*k;t.scale(b.flip?-s:s,s);t.drawImage(b.img,-b.w/2,-b.h/2);t.restore();
+  if(off){hueShift(off,b.hue);x.drawImage(off,0,0)}}
  else if(preview){x.fillStyle='#6b717b';x.font=`${D*.04}px system-ui`;x.textAlign='center';x.fillText('Загрузите изображение во вкладке «Фон»',D/2,D*.4)}
  if(b.dim>0){x.fillStyle=`rgba(0,0,0,${b.dim})`;x.fillRect(0,0,D,D)}
  if(S.logo.on&&logoImg.complete){x.globalAlpha=S.logo.opacity;x.globalCompositeOperation=S.logo.blend;x.drawImage(logoCanvas(D),0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over'}
@@ -212,38 +219,20 @@ async function makeBlob(){
  if(S.fmt==='image/jpeg'){x.fillStyle='#fff';x.fillRect(0,0,S.size,S.size)}
  render(c,S.size,false);
  return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('toBlob')),S.fmt,S.q))}
-$('#go').onclick=async()=>{
- if(busy)return;busy=true;const st=$('#status'),btn=$('#go');btn.textContent='Готовлю файл…';st.textContent='';
+$('#goTg').onclick=async e=>{
+ const btn=e.currentTarget,st=$('#status');
+ if(busy)return;
+ if(!(tg&&tg.initData)){alert('Откройте приложение через бота в Telegram, тогда готовая обложка придёт вам в чат.');return}
+ busy=true;const old=btn.textContent;btn.textContent='Отправляю…';st.textContent='';
  try{
   const blob=await makeBlob(),ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[blob.type]||'png';
-  const num=(S.layers[0].text.match(/\d+/)||['cover'])[0],name=`COOLT_${num}.${ext}`;
-  last={blob,name,file:new File([blob],name,{type:blob.type}),url:URL.createObjectURL(blob)};
-  $('#dlimg').src=last.url;$('#dlnote').textContent=`${name}, ${S.size}×${S.size}`;
-  $('#dlshare').style.display=(navigator.canShare&&navigator.canShare({files:[last.file]}))?'':'none';
-  $('#dl').hidden=false;st.textContent='';
- }catch(err){st.textContent='Не удалось создать файл. Выберите размер поменьше (2000 или 1500) и повторите.'}
- finally{busy=false;btn.textContent='Скачать на устройство'}};
-$('#dlclose').onclick=()=>{$('#dl').hidden=true};
-$('#dlsave').onclick=()=>{if(!last)return;const a=document.createElement('a');a.href=last.url;a.download=last.name;document.body.appendChild(a);a.click();a.remove();
- $('#dlnote').textContent='Если файл не появился — Telegram блокирует скачивание. Нажмите «Открыть в браузере» или «Поделиться».'};
-$('#dlopen').onclick=()=>{window.open(last.url,'_blank')};
-$('#dlshare').onclick=async()=>{try{await navigator.share({files:[last.file]})}catch(e){}};
-$('#dlweb').onclick=()=>{const u=location.href.split('#')[0];tg&&tg.openLink?tg.openLink(u,{try_browser:'chrome'}):window.open(u,'_blank')};
-
-
-/* ---------- отправка файла в чат Telegram ---------- */
-async function sendTg(btn){
- if(busy)return;busy=true;const old=btn.textContent,st=$('#status');btn.textContent='Отправляю…';
- try{
-  if(!last||last.stale){const blob=await makeBlob();last={blob,name:'COOLT_'+((S.layers[0].text.match(/\d+/)||['cover'])[0])+'.'+({'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[blob.type]||'png'),url:URL.createObjectURL(blob)}}
-  const f=new FormData();f.append('initData',tg.initData);f.append('file',last.blob,last.name);
-  const r=await fetch(WORKER_URL,{method:'POST',body:f}),j=await r.json();
-  const msg=j.ok?'Готово! Файл пришёл вам в чат с ботом.':'Ошибка: '+(j.error||r.status)+(String(j.error).includes('chat not found')||String(j.error).includes('blocked')?'. Откройте чат с ботом и нажмите /start.':'');
-  st.textContent=msg;$('#dlnote').textContent=msg;alert(msg);
- }catch(e){const m='Не удалось отправить. Проверьте адрес WORKER_URL и интернет.';st.textContent=m;alert(m)}
- finally{busy=false;btn.textContent=old}}
-if(tg&&tg.initData&&WORKER_URL){$('#goTg').style.display=$('#dlTg').style.display='';}
-$('#goTg').onclick=e=>{last=null;sendTg(e.currentTarget)};$('#dlTg').onclick=e=>sendTg(e.currentTarget);
+  const name='COOLT_'+((S.layers[0].text.match(/\d+/)||['cover'])[0])+'.'+ext;
+  const f=new FormData();f.append('initData',tg.initData);f.append('file',blob,name);
+  const r=await fetch(WORKER_URL,{method:'POST',body:f}),j=await r.json(),err=String(j.error||r.status);
+  const msg=j.ok?'Готово! Файл пришёл вам в чат с ботом.':'Ошибка: '+err+(/chat not found|blocked/.test(err)?'. Откройте чат с ботом и нажмите /start.':'');
+  st.textContent=msg;alert(msg);
+ }catch(err){const m='Не удалось отправить. Проверьте интернет и повторите.';st.textContent=m;alert(m)}
+ finally{busy=false;btn.textContent=old}};
 
 sync();document.fonts.load('30px Gotthard').then(draw);draw();
 </script>
